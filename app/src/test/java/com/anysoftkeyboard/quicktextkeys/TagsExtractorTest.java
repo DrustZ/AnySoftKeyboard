@@ -1,5 +1,7 @@
 package com.anysoftkeyboard.quicktextkeys;
 
+import static com.anysoftkeyboard.ime.AnySoftKeyboardKeyboardTagsSearcher.MAGNIFYING_GLASS_CHARACTER;
+
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
@@ -14,18 +16,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.robolectric.Robolectric;
 import org.robolectric.RuntimeEnvironment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.anysoftkeyboard.ime.AnySoftKeyboardKeyboardTagsSearcher.MAGNIFYING_GLASS_CHARACTER;
-
 @RunWith(AnySoftKeyboardRobolectricTestRunner.class)
 public class TagsExtractorTest {
 
-    private TagsExtractor mUnderTest;
+    private TagsExtractorImpl mUnderTest;
     private KeyCodesProvider mWordComposer;
     private QuickKeyHistoryRecords mQuickKeyHistoryRecords;
 
@@ -66,6 +67,11 @@ public class TagsExtractorTest {
         Mockito.doReturn(Arrays.asList("face")).when((AnyKeyboard.AnyKey) keysForTest2.get(3)).getKeyTags();
         mQuickKeyHistoryRecords = new QuickKeyHistoryRecords(AnyApplication.prefs(RuntimeEnvironment.application));
         mUnderTest = new TagsExtractorImpl(RuntimeEnvironment.application, Arrays.asList(keysForTest, keysForTest2), mQuickKeyHistoryRecords);
+
+        Robolectric.flushBackgroundThreadScheduler();
+        Robolectric.flushForegroundThreadScheduler();
+
+        Assert.assertFalse(mUnderTest.mTagsDictionary.isClosed());
     }
 
     @Test
@@ -101,6 +107,15 @@ public class TagsExtractorTest {
         Assert.assertEquals(2, outputForTag.size());
         Assert.assertEquals(MAGNIFYING_GLASS_CHARACTER + "pa", outputForTag.get(0));
         Assert.assertEquals("PALM", outputForTag.get(1));
+    }
+
+    @Test
+    public void testClose() throws Exception {
+        Assert.assertFalse(mUnderTest.mTagsDictionary.isClosed());
+
+        mUnderTest.close();
+
+        Assert.assertTrue(mUnderTest.mTagsDictionary.isClosed());
     }
 
     @Test

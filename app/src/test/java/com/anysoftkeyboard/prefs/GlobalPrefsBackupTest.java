@@ -81,8 +81,6 @@ public class GlobalPrefsBackupTest {
 
         hits.get().clear();
 
-        System.out.println("AnyApplication.getBackupFile(GlobalPrefsBackup.GLOBAL_BACKUP_FILENAME) is " + AnyApplication.getBackupFile(GlobalPrefsBackup.GLOBAL_BACKUP_FILENAME).getAbsolutePath());
-        System.out.println(Arrays.toString(Files.readAllLines(AnyApplication.getBackupFile(GlobalPrefsBackup.GLOBAL_BACKUP_FILENAME).toPath(), Charsets.UTF8).toArray()));
         Assert.assertTrue(AnyApplication.getBackupFile(GlobalPrefsBackup.GLOBAL_BACKUP_FILENAME).exists());
         Assert.assertTrue(AnyApplication.getBackupFile(GlobalPrefsBackup.GLOBAL_BACKUP_FILENAME).length() > 0);
 
