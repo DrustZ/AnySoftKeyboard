@@ -1796,7 +1796,9 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             setSuggestions(suggestions, false, false, false);
         } else if (!TextUtils.isEmpty(mCommittedWord)) {
             List<CharSequence> suggestions = mSuggest.getNextSuggestions(mCommittedWord,  mWord.isAllUpperCase());
-//            suggestions.add(0, "\uD83D\uDE00");
+            if (mLastSpaceTimeStamp == NEVER_TIME_STAMP) {
+                suggestions.add(0, "\uD83D\uDE00");
+            }
             //[Ray] after space, we could add emojis if there's already a sentence. (add here, but maybe no emoji if there's more spaces)
             setSuggestions(suggestions, false, false, false);
             mWord.setFirstCharCapitalized(false);
