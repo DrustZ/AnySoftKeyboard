@@ -1403,7 +1403,9 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         TextEntryState.acceptedDefault(text);
         ic.endBatchEdit();
 
-        setSuggestions(mSuggest.getNextSuggestions(mCommittedWord, false), false, false, false);
+        List<CharSequence> suggestions = mSuggest.getNextSuggestions(mCommittedWord, false);
+        suggestions.add(0, "\uD83D\uDE00");
+        setSuggestions(suggestions, false, false, false);
     }
 
     @Override
@@ -1735,6 +1737,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         // inside the predicted word.
         // in this case, I will want to just dump the separator.
         final boolean separatorInsideWord = (mWord.cursorPosition() < mWord.length());
+        // [Ray] here does the default picking after space
         if (TextEntryState.isPredicting() && !separatorInsideWord) {
             //ACTION does not invoke default picking. See https://github.com/AnySoftKeyboard/AnySoftKeyboard/issues/198
             pickDefaultSuggestion(isAutoCorrect() && !newLine);
@@ -1788,8 +1791,14 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         if (isEndOfSentence) {
             mSuggest.resetNextWordSentence();
             clearSuggestions();
+            List<CharSequence> suggestions = new ArrayList<CharSequence>();
+            suggestions.add(0, "\uD83D\uDE00");
+            setSuggestions(suggestions, false, false, false);
         } else if (!TextUtils.isEmpty(mCommittedWord)) {
-            setSuggestions(mSuggest.getNextSuggestions(mCommittedWord, mWord.isAllUpperCase()), false, false, false);
+            List<CharSequence> suggestions = mSuggest.getNextSuggestions(mCommittedWord,  mWord.isAllUpperCase());
+//            suggestions.add(0, "\uD83D\uDE00");
+            //[Ray] after space, we could add emojis if there's already a sentence. (add here, but maybe no emoji if there's more spaces)
+            setSuggestions(suggestions, false, false, false);
             mWord.setFirstCharCapitalized(false);
         }
     }
@@ -1990,7 +1999,9 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                     //showing next-words if:
                     //showingAddToDictionaryHint == false, we most likely do not have a next-word suggestion! The committed word is not in the dictionary
                     //mJustAutoAddedWord == false, we most likely do not have a next-word suggestion for a newly added word.
-                    setSuggestions(mSuggest.getNextSuggestions(mCommittedWord, mWord.isAllUpperCase()), false, false, false);
+                    List<CharSequence> suggestions = mSuggest.getNextSuggestions(mCommittedWord,  mWord.isAllUpperCase());
+                    suggestions.add(0, "\uD83D\uDE00");
+                    setSuggestions(suggestions, false, false, false);
                     mWord.setFirstCharCapitalized(false);
                 }
             }
