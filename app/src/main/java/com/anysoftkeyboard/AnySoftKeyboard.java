@@ -1802,9 +1802,25 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         addEmoji = true;
         List<String> tokens = Twokenize.tokenizeRawTweetText(content);
 //        Log.d("[Ray]", "begin tokenizing:-");
-//        for (String word : tokens) {
-//            Log.d("[Ray]", word);
-//        }
+        for (int i = 0; i < tokens.size(); ++i) {
+            String word = tokens.get(i);
+            String newword = "";
+            char c = word.charAt(0);
+            newword += c;
+            int count = 0;
+            for (int j = 1; j < word.length(); ++j){
+                if (c == word.charAt(j)){
+                    count += 1;
+                    if (count > 1){
+                        continue;
+                    }
+                } else {
+                    count = 0;
+                    c = word.charAt(j);
+                }
+                newword += word.charAt(j);
+            }
+        }
 
         if (isEndOfSentence) {
             mSuggest.resetNextWordSentence();
