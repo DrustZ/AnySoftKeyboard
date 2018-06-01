@@ -169,12 +169,15 @@ dependencies {
     implementation('com.github.menny.Chauffeur:permissions:0.1.1') {
         exclude group: 'com.android.support'
     }
+    implementation 'com.vdurmont:emoji-java:4.0.0'
 
     testImplementation project(path: ':base-test')
 
     testImplementation 'com.github.triplet.simpleprovider:simpleprovider:1.1.0'
 
     canaryImplementation project(path: ':crashlytics')
+
+
 }
 
 crashlytics {

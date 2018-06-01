@@ -16,6 +16,7 @@
 
 package com.anysoftkeyboard;
 
+import static com.anysoftkeyboard.utils.Twokenize.tokenizeRawTweetText;
 import static com.menny.android.anysoftkeyboard.AnyApplication.getKeyboardThemeFactory;
 
 import android.annotation.SuppressLint;
@@ -34,6 +35,7 @@ import android.support.annotation.VisibleForTesting;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.util.TypedValue;
 import android.view.KeyEvent;
@@ -84,10 +86,12 @@ import com.anysoftkeyboard.ui.settings.MainSettingsActivity;
 import com.anysoftkeyboard.utils.ChewbaccaOnTheDrums;
 import com.anysoftkeyboard.utils.IMEUtil;
 import com.anysoftkeyboard.utils.Triple;
+import com.anysoftkeyboard.utils.Twokenize;
 import com.google.android.voiceime.VoiceRecognitionTrigger;
 import com.menny.android.anysoftkeyboard.AnyApplication;
 import com.menny.android.anysoftkeyboard.BuildConfig;
 import com.menny.android.anysoftkeyboard.R;
+import com.vdurmont.emoji.EmojiParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1788,6 +1792,20 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             ic.endBatchEdit();
         }
 
+        Boolean addEmoji = false;
+        //[Ray] get left chars
+        InputConnection inputConnection = getCurrentInputConnection();
+        String content = inputConnection.getTextBeforeCursor(200, 0).toString();
+//        Log.d("[Ray]", "[content] "+content);
+        content = content.trim();
+        content = EmojiParser.removeAllEmojis(content);
+        addEmoji = true;
+        List<String> tokens = Twokenize.tokenizeRawTweetText(content);
+//        Log.d("[Ray]", "begin tokenizing:-");
+//        for (String word : tokens) {
+//            Log.d("[Ray]", word);
+//        }
+
         if (isEndOfSentence) {
             mSuggest.resetNextWordSentence();
             clearSuggestions();
@@ -1795,7 +1813,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             suggestions.add(0, "\uD83D\uDE00");
             setSuggestions(suggestions, false, false, false);
         } else if (!TextUtils.isEmpty(mCommittedWord)) {
-            List<CharSequence> suggestions = mSuggest.getNextSuggestions(mCommittedWord,  mWord.isAllUpperCase());
+            List<CharSequence> suggestions = new ArrayList<CharSequence>(mSuggest.getNextSuggestions(mCommittedWord,  mWord.isAllUpperCase()));
             if (mLastSpaceTimeStamp == NEVER_TIME_STAMP) {
                 suggestions.add(0, "\uD83D\uDE00");
             }
@@ -1803,6 +1821,11 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             setSuggestions(suggestions, false, false, false);
             mWord.setFirstCharCapitalized(false);
         }
+    }
+
+    private List<String> splitTokens(String word){
+
+        return new ArrayList<String>();
     }
 
     private boolean isSpaceSwapCharacter(int primaryCode) {
