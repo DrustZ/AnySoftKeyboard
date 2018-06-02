@@ -98,6 +98,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import io.reactivex.Observable;
 
@@ -168,6 +169,12 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
     private View mFullScreenExtractView;
     private EditText mFullScreenExtractTextView;
     private boolean mFrenchSpacePunctuationBehavior;
+
+    private Pattern URLs  = Pattern.compile(
+            Twokenize.OR(
+                    Twokenize.url,
+                    Twokenize.Email
+            ));
 
     public AnySoftKeyboard() {
         super();
@@ -1820,6 +1827,12 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 }
                 newword += word.charAt(j);
             }
+            //[Ray] test url/email
+            Log.d("[Ray]", newword+ " " + URLs.matcher(newword).matches());
+            //[Ray] test number
+//            if (Character.isDigit(newword.charAt(0))){
+//
+//            };
         }
 
         if (isEndOfSentence) {
