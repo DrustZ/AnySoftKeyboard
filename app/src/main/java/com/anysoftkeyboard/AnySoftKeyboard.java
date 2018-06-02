@@ -1828,7 +1828,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 newword += word.charAt(j);
             }
             //[Ray] test url/email
-            Log.d("[Ray]", newword+ " " + URLs.matcher(newword).matches());
+//            Log.d("[Ray]", newword+ " " + URLs.matcher(newword).matches());
             //[Ray] test number
 //            if (Character.isDigit(newword.charAt(0))){
 //
