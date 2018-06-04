@@ -170,6 +170,7 @@ dependencies {
         exclude group: 'com.android.support'
     }
     implementation 'com.vdurmont:emoji-java:4.0.0'
+    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
 
     testImplementation project(path: ':base-test')
 

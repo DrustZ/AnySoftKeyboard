@@ -25,9 +25,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -93,6 +96,9 @@ import com.menny.android.anysoftkeyboard.BuildConfig;
 import com.menny.android.anysoftkeyboard.R;
 import com.vdurmont.emoji.EmojiParser;
 
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,6 +107,12 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 import io.reactivex.Observable;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Input method implementation for QWERTY-ish keyboard.
@@ -178,7 +190,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
 
     public AnySoftKeyboard() {
         super();
-    }
+        }
 
     //TODO SHOULD NOT USE THIS METHOD AT ALL!
     private static int getCursorPosition(@Nullable InputConnection connection) {
@@ -1799,14 +1811,10 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             ic.endBatchEdit();
         }
 
-        Boolean addEmoji = false;
-        //[Ray] get left chars
-        InputConnection inputConnection = getCurrentInputConnection();
-        String content = inputConnection.getTextBeforeCursor(200, 0).toString();
-//        Log.d("[Ray]", "[content] "+content);
-        content = content.trim();
+        /*
         content = EmojiParser.removeAllEmojis(content);
         addEmoji = true;
+
         List<String> tokens = Twokenize.tokenizeRawTweetText(content);
 //        Log.d("[Ray]", "begin tokenizing:-");
         for (int i = 0; i < tokens.size(); ++i) {
@@ -1834,22 +1842,70 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
 //
 //            };
         }
+        */
 
         if (isEndOfSentence) {
             mSuggest.resetNextWordSentence();
             clearSuggestions();
-            List<CharSequence> suggestions = new ArrayList<CharSequence>();
-            suggestions.add(0, "\uD83D\uDE00");
-            setSuggestions(suggestions, false, false, false);
+            predictEmoji();
         } else if (!TextUtils.isEmpty(mCommittedWord)) {
             List<CharSequence> suggestions = new ArrayList<CharSequence>(mSuggest.getNextSuggestions(mCommittedWord,  mWord.isAllUpperCase()));
             if (mLastSpaceTimeStamp == NEVER_TIME_STAMP) {
-                suggestions.add(0, "\uD83D\uDE00");
+                predictEmoji();
             }
             //[Ray] after space, we could add emojis if there's already a sentence. (add here, but maybe no emoji if there's more spaces)
-            setSuggestions(suggestions, false, false, false);
             mWord.setFirstCharCapitalized(false);
         }
+    }
+
+    private void predictEmoji(){
+        //[Ray] get left chars
+        InputConnection inputConnection = getCurrentInputConnection();
+        String content = inputConnection.getTextBeforeCursor(200, 0).toString();
+        Log.d("[Ray]", "[content] "+content);
+
+
+        OkHttpClient okHttpClient = new OkHttpClient();
+        FormBody formBody = new FormBody
+                .Builder()
+                .add("content",content)
+                .build();
+        Request request = new Request
+                .Builder()
+                .post(formBody)
+                .url("http://192.168.1.10:8888")
+                .build();
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {}
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String[] results = response.body().string().split("-splt-");
+                Log.d("[Ray]", results[0]);
+                if (results.length == 3) {
+                    if (results[0].contentEquals(inputConnection.getTextBeforeCursor(200, 0).toString())){
+                        String[] emojis = results[1].split(",");
+                        List<CharSequence> suggestions = new ArrayList<CharSequence>();
+                        for (String e : emojis) {
+                            int idx = Integer.parseInt(e);
+                            suggestions.add(ConstantValues.EMOJILIST[idx]);
+                        }
+
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            public void run() {
+                                setSuggestions(suggestions, false, false, false);
+                                Log.d("[Ray]", results[1]);
+                            }
+                        });
+
+                    }
+
+                }
+                response.body().close();
+
+            }
+        });
     }
 
     private List<String> splitTokens(String word){
@@ -2047,15 +2103,17 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                                 && (!mSuggest.isValidWord(suggestion))// this is for the case that the word was auto-added upon picking
                                 && (!mSuggest.isValidWord(suggestion.toString().toLowerCase(getCurrentAlphabetKeyboard().getLocale())));
 
+
                 if (showingAddToDictionaryHint) {
-                    if (mCandidateView != null) mCandidateView.showAddToDictionaryHint(suggestion);
+//                    if (mCandidateView != null) mCandidateView.showAddToDictionaryHint(suggestion);
                 } else if (!TextUtils.isEmpty(mCommittedWord) && !mJustAutoAddedWord) {
                     //showing next-words if:
                     //showingAddToDictionaryHint == false, we most likely do not have a next-word suggestion! The committed word is not in the dictionary
                     //mJustAutoAddedWord == false, we most likely do not have a next-word suggestion for a newly added word.
-                    List<CharSequence> suggestions = mSuggest.getNextSuggestions(mCommittedWord,  mWord.isAllUpperCase());
-                    suggestions.add(0, "\uD83D\uDE00");
-                    setSuggestions(suggestions, false, false, false);
+//                    List<CharSequence> suggestions = mSuggest.getNextSuggestions(mCommittedWord,  mWord.isAllUpperCase());
+//                    suggestions.add(0, "\uD83D\uDE00");
+//                    setSuggestions(suggestions, false, false, false);
+                    predictEmoji();
                     mWord.setFirstCharCapitalized(false);
                 }
             }
