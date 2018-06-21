@@ -2578,7 +2578,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         getPref();
         int oldCount = mPref.getInt("deletedChar", 0);
         mPrefEditor.putInt("deletedChar", oldCount+length);
-        Log.d("[Ray]", "deletedChar: now "+String.valueOf(oldCount+1));
+//        Log.d("[Ray]", "deletedChar: now "+String.valueOf(oldCount+1));
         mPrefEditor.apply();
     }
 
@@ -2586,7 +2586,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         getPref();
         int oldCount = mPref.getInt("addedEmoji", 0);
         mPrefEditor.putInt("addedEmoji", oldCount+1);
-        Log.d("[Ray]", "addLogEmoji: now "+String.valueOf(oldCount+1));
+//        Log.d("[Ray]", "addLogEmoji: now "+String.valueOf(oldCount+1));
         mPrefEditor.apply();
     }
 
