@@ -23,6 +23,7 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -94,6 +95,8 @@ import com.google.android.voiceime.VoiceRecognitionTrigger;
 import com.menny.android.anysoftkeyboard.AnyApplication;
 import com.menny.android.anysoftkeyboard.BuildConfig;
 import com.menny.android.anysoftkeyboard.R;
+import com.vdurmont.emoji.Emoji;
+import com.vdurmont.emoji.EmojiManager;
 import com.vdurmont.emoji.EmojiParser;
 
 import org.json.JSONObject;
@@ -188,9 +191,16 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                     Twokenize.Email
             ));
 
+    /*
+     * A data logger area
+     */
+    private SharedPreferences.Editor prefsEdit; //= getSharedPreferences("StatsLogger", MODE_PRIVATE).edit();
+    private SharedPreferences prefs ;//= getSharedPreferences("StatsLogger", MODE_PRIVATE);
+    private boolean emojiJustPicked = false;
+
     public AnySoftKeyboard() {
         super();
-        }
+    }
 
     //TODO SHOULD NOT USE THIS METHOD AT ALL!
     private static int getCursorPosition(@Nullable InputConnection connection) {
@@ -704,6 +714,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 mWord.add(c, tempNearByKeys);
 
                 TextEntryState.typedCharacter(c, false);
+                Log.d("[Ray]", "add: 1 char! (performRestartWordSuggestion)");
+//                addLogTypedChar(1);
             }
             ic.setComposingRegion(mGlobalCursorPosition - toLeft.length(), mGlobalCursorPosition + toRight.length());
 
@@ -980,6 +992,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                         handleDeleteLastCharacter(false);
                     }
                 }
+                emojiJustPicked = false;
                 break;
             case KeyCodes.SHIFT:
                 if (fromUI) {
@@ -1189,6 +1202,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
 
         switch (primaryCode) {
             case KeyCodes.ENTER:
+                emojiJustPicked = false;
                 if (mShiftKeyState.isPressed() && ic != null) {
                     //power-users feature ahead: Shift+Enter
                     //getting away from firing the default editor action, by forcing newline
@@ -1215,6 +1229,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 }
                 break;
             case KeyCodes.SPACE:
+                emojiJustPicked = false;
                 //shortcut. Nothing more.
                 handleSeparator(primaryCode);
                 //should we switch to alphabet keyboard?
@@ -1232,6 +1247,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 sendEscape();
                 break;
             default:
+                emojiJustPicked = false;
                 if (isWordSeparator(primaryCode)) {
                     handleSeparator(primaryCode);
                 } else {
@@ -1533,13 +1549,35 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             } else {
                 ic.deleteSurroundingText(1, 0);
             }
+//            deleteLogTypedChar(1);
+            Log.d("[Ray]", "delete: 1 char! (handleDeleteLastCharacter)");
         } else if (newState == TextEntryState.State.UNDO_COMMIT) {
             revertLastWord();
+//            deleteLogTypedChar(1);
+            Log.d("[Ray]", "delete: 1 char! (handleDeleteLastCharacter)");
         } else {
             //just making sure that
             if (mCandidateView != null) mCandidateView.dismissAddToDictionaryHint();
 
+            CharSequence selection = ic == null ? null : ic.getSelectedText(0);
+            int deleteCount = selection == null ? 1 : selection.length();
+            if (deleteCount < 1){
+                deleteCount = 1;
+            }
+
             if (!forMultiTap) {
+                final CharSequence beforeText = ic == null ? null : ic.getTextBeforeCursor(1, 0);
+                final int textLengthBeforeDelete = (TextUtils.isEmpty(beforeText)) ? 0 : beforeText.length();
+                if (textLengthBeforeDelete > 0) {
+                    // if is not emoji
+                    if (beforeText.toString().matches("\\A\\p{ASCII}*\\z")) {
+//                        deleteLogTypedChar(deleteCount);
+                        Log.d("[Ray]", "delete: "+String.valueOf(deleteCount)+" chars, which is "+beforeText + "(handleDeleteLastCharacter)");
+                    } else if (emojiJustPicked){
+//                        deleteLogEmoji();
+                        Log.d("[Ray]", "delete: emoji!, which is "+beforeText + "(handleDeleteLastCharacter)");
+                    }
+                }
                 sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
             } else {
                 // this code tries to delete the text in a different way,
@@ -1552,6 +1590,14 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 final int textLengthBeforeDelete = (TextUtils.isEmpty(beforeText)) ? 0 : beforeText.length();
                 if (textLengthBeforeDelete > 0) {
                     ic.deleteSurroundingText(1, 0);
+                    // if is not emoji
+                    if (beforeText.toString().matches("\\A\\p{ASCII}*\\z")) {
+//                        deleteLogTypedChar(deleteCount);
+                        Log.d("[Ray]", "delete: "+String.valueOf(deleteCount)+" chars, which is "+beforeText + "(handleDeleteLastCharacter)");
+                    } else if (emojiJustPicked){
+//                        deleteLogEmoji();
+                        Log.d("[Ray]", "delete: emoji!, which is "+beforeText + "(handleDeleteLastCharacter)");
+                    }
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
                 }
@@ -1690,6 +1736,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         } else if (TextEntryState.isPredicting()) {
             TextEntryState.typedCharacter((char) primaryCode, false);
         }
+        Log.d("[Ray]", "add: one char ! (handleCharacter)");
+//        addLogTypedChar(1);
 
         mLastCharacterWasShifted = (getInputView() != null) && getInputView().isShifted();
 
@@ -1805,6 +1853,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         if (!handledOutputToInputConnection) {
             sendKeyChar((char) primaryCode);
         }
+        Log.d("[Ray]", "add: one char ! (handleSeparator)");
+//        addLogTypedChar(1);
         TextEntryState.typedCharacter((char) primaryCode, true);
 
         if (ic != null) {
@@ -1861,7 +1911,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
     private void predictEmoji(){
         //[Ray] get left chars
         InputConnection inputConnection = getCurrentInputConnection();
-        String content = inputConnection.getTextBeforeCursor(200, 0).toString();
+        String content = inputConnection.getTextBeforeCursor(200, 0).toString().trim();
         Log.d("[Ray]", "[content] "+content);
 
 
@@ -1873,7 +1923,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         Request request = new Request
                 .Builder()
                 .post(formBody)
-                .url("http://192.168.1.10:8888")
+                .url("http://128.95.157.1:8888")
                 .build();
         okHttpClient.newCall(request).enqueue(new Callback() {
             @Override
@@ -1884,7 +1934,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 String[] results = response.body().string().split("-splt-");
                 Log.d("[Ray]", results[0]);
                 if (results.length == 3) {
-                    if (results[0].contentEquals(inputConnection.getTextBeforeCursor(200, 0).toString())){
+                    if (results[0].contentEquals(inputConnection.getTextBeforeCursor(200, 0).toString().trim())){
                         String[] emojis = results[1].split(",");
                         List<CharSequence> suggestions = new ArrayList<CharSequence>();
                         for (String e : emojis) {
@@ -2047,6 +2097,12 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         super.pickSuggestionManually(index, suggestion, withAutoSpaceEnabled);
         final String typedWord = mWord.getTypedWord().toString();
 
+        if (EmojiManager.isEmoji(suggestion.toString())) {
+            //regular emoji. Storing in history.
+            Log.d("[Ray]", "pickSuggestionManually: emoji: " + suggestion.toString());
+            emojiJustPicked = true;
+        }
+
         if (mWord.isAtTagsSearchState()) {
             if (index == 0) {
                 //this is a special case for tags-searcher
@@ -2054,7 +2110,6 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 //value is not a valid output suggestion
                 suggestion = typedWord;
             } else {
-                //regular emoji. Storing in history.
                 getQuickKeyHistoryRecords().store(suggestion.toString(), suggestion.toString());
             }
         }
@@ -2081,11 +2136,14 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             commitWordToInput(suggestion, false/*user physically picked a word from the suggestions strip. this is not a fix*/);
 
             TextEntryState.acceptedSuggestion(mWord.getTypedWord(), suggestion);
+
             // Follow it with a space
-            if (withAutoSpaceEnabled && (index == 0 || !mWord.isAtTagsSearchState())) {
+            if (!emojiJustPicked && withAutoSpaceEnabled && (index == 0 || !mWord.isAtTagsSearchState())) {
                 sendKeyChar((char) KeyCodes.SPACE);
                 mJustAddedAutoSpace = true;
                 setSpaceTimeStamp(true);
+//                addLogTypedChar(1);
+                Log.d("[Ray]", "add: 1 char ! (pickSuggestionManually)");
                 TextEntryState.typedCharacter(' ', true);
             }
             // Add the word to the auto dictionary if it's not a known word
@@ -2129,12 +2187,17 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         super.commitWordToInput(wordToCommit, correcting);
         mWord.setPreferredWord(wordToCommit);
         InputConnection ic = getCurrentInputConnection();
+//        addLogTypedChar(wordToCommit.length());
+        Log.d("[Ray]", "add:"+ String.valueOf(wordToCommit.length()) +" char ! (commitWordToInput)");
         if (ic != null) {
             if (correcting) {
                 AnyApplication.getDeviceSpecific().commitCorrectionToInputConnection(ic, mGlobalCursorPosition - mWord.getTypedWord().length(), mWord.getTypedWord(), mWord.getPreferredWord());
+//
             } else {
                 ic.commitText(wordToCommit, 1);
             }
+//            deleteLogTypedChar(mWord.getTypedWord().length());
+            Log.d("[Ray]", "delete:"+ String.valueOf(mWord.getTypedWord().length()) +" char ! (commitWordToInput)");
         }
         mCommittedWord = wordToCommit;
         mUndoCommitCursorPosition = UNDO_COMMIT_WAITING_TO_RECORD_POSITION;
