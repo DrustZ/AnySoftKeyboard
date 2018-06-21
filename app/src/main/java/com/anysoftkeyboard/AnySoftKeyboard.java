@@ -194,8 +194,9 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
     /*
      * A data logger area
      */
-    private SharedPreferences.Editor prefsEdit; //= getSharedPreferences("StatsLogger", MODE_PRIVATE).edit();
-    private SharedPreferences prefs ;//= getSharedPreferences("StatsLogger", MODE_PRIVATE);
+    SharedPreferences mPref = null;
+    SharedPreferences.Editor mPrefEditor = null;
+
     private boolean emojiJustPicked = false;
 
     public AnySoftKeyboard() {
@@ -714,8 +715,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 mWord.add(c, tempNearByKeys);
 
                 TextEntryState.typedCharacter(c, false);
-                Log.d("[Ray]", "add: 1 char! (performRestartWordSuggestion)");
-//                addLogTypedChar(1);
+//                Log.d("[Ray]", "add: 1 char! (performRestartWordSuggestion)");
+                addLogTypedChar(1);
             }
             ic.setComposingRegion(mGlobalCursorPosition - toLeft.length(), mGlobalCursorPosition + toRight.length());
 
@@ -1549,12 +1550,12 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             } else {
                 ic.deleteSurroundingText(1, 0);
             }
-//            deleteLogTypedChar(1);
-            Log.d("[Ray]", "delete: 1 char! (handleDeleteLastCharacter)");
+            deleteLogTypedChar(1);
+//            Log.d("[Ray]", "delete: 1 char! (handleDeleteLastCharacter)");
         } else if (newState == TextEntryState.State.UNDO_COMMIT) {
             revertLastWord();
-//            deleteLogTypedChar(1);
-            Log.d("[Ray]", "delete: 1 char! (handleDeleteLastCharacter)");
+            deleteLogTypedChar(1);
+//            Log.d("[Ray]", "delete: 1 char! (handleDeleteLastCharacter)");
         } else {
             //just making sure that
             if (mCandidateView != null) mCandidateView.dismissAddToDictionaryHint();
@@ -1571,11 +1572,11 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 if (textLengthBeforeDelete > 0) {
                     // if is not emoji
                     if (beforeText.toString().matches("\\A\\p{ASCII}*\\z")) {
-//                        deleteLogTypedChar(deleteCount);
-                        Log.d("[Ray]", "delete: "+String.valueOf(deleteCount)+" chars, which is "+beforeText + "(handleDeleteLastCharacter)");
+                        deleteLogTypedChar(deleteCount);
+//                        Log.d("[Ray]", "delete: "+String.valueOf(deleteCount)+" chars, which is "+beforeText + "(handleDeleteLastCharacter)");
                     } else if (emojiJustPicked){
-//                        deleteLogEmoji();
-                        Log.d("[Ray]", "delete: emoji!, which is "+beforeText + "(handleDeleteLastCharacter)");
+                        deleteLogEmoji();
+//                        Log.d("[Ray]", "delete: emoji!, which is "+beforeText + "(handleDeleteLastCharacter)");
                     }
                 }
                 sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
@@ -1592,11 +1593,11 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                     ic.deleteSurroundingText(1, 0);
                     // if is not emoji
                     if (beforeText.toString().matches("\\A\\p{ASCII}*\\z")) {
-//                        deleteLogTypedChar(deleteCount);
-                        Log.d("[Ray]", "delete: "+String.valueOf(deleteCount)+" chars, which is "+beforeText + "(handleDeleteLastCharacter)");
+                        deleteLogTypedChar(deleteCount);
+//                        Log.d("[Ray]", "delete: "+String.valueOf(deleteCount)+" chars, which is "+beforeText + "(handleDeleteLastCharacter)");
                     } else if (emojiJustPicked){
-//                        deleteLogEmoji();
-                        Log.d("[Ray]", "delete: emoji!, which is "+beforeText + "(handleDeleteLastCharacter)");
+                        deleteLogEmoji();
+//                        Log.d("[Ray]", "delete: emoji!, which is "+beforeText + "(handleDeleteLastCharacter)");
                     }
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
@@ -1736,8 +1737,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         } else if (TextEntryState.isPredicting()) {
             TextEntryState.typedCharacter((char) primaryCode, false);
         }
-        Log.d("[Ray]", "add: one char ! (handleCharacter)");
-//        addLogTypedChar(1);
+//        Log.d("[Ray]", "add: one char ! (handleCharacter)");
+        addLogTypedChar(1);
 
         mLastCharacterWasShifted = (getInputView() != null) && getInputView().isShifted();
 
@@ -1853,8 +1854,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         if (!handledOutputToInputConnection) {
             sendKeyChar((char) primaryCode);
         }
-        Log.d("[Ray]", "add: one char ! (handleSeparator)");
-//        addLogTypedChar(1);
+//        Log.d("[Ray]", "add: one char ! (handleSeparator)");
+        addLogTypedChar(1);
         TextEntryState.typedCharacter((char) primaryCode, true);
 
         if (ic != null) {
@@ -1913,7 +1914,10 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         InputConnection inputConnection = getCurrentInputConnection();
         String content = inputConnection.getTextBeforeCursor(200, 0).toString().trim();
         Log.d("[Ray]", "[content] "+content);
-
+        if (content.equalsIgnoreCase("showlogstatus:")){
+            inputConnection.commitText(stringLogStatus(), 1);
+            return;
+        }
 
         OkHttpClient okHttpClient = new OkHttpClient();
         FormBody formBody = new FormBody
@@ -2099,7 +2103,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
 
         if (EmojiManager.isEmoji(suggestion.toString())) {
             //regular emoji. Storing in history.
-            Log.d("[Ray]", "pickSuggestionManually: emoji: " + suggestion.toString());
+//            Log.d("[Ray]", "pickSuggestionManually: emoji: " + suggestion.toString());
+            addLogEmoji();
             emojiJustPicked = true;
         }
 
@@ -2142,8 +2147,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 sendKeyChar((char) KeyCodes.SPACE);
                 mJustAddedAutoSpace = true;
                 setSpaceTimeStamp(true);
-//                addLogTypedChar(1);
-                Log.d("[Ray]", "add: 1 char ! (pickSuggestionManually)");
+                addLogTypedChar(1);
+//                Log.d("[Ray]", "add: 1 char ! (pickSuggestionManually)");
                 TextEntryState.typedCharacter(' ', true);
             }
             // Add the word to the auto dictionary if it's not a known word
@@ -2187,8 +2192,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         super.commitWordToInput(wordToCommit, correcting);
         mWord.setPreferredWord(wordToCommit);
         InputConnection ic = getCurrentInputConnection();
-//        addLogTypedChar(wordToCommit.length());
-        Log.d("[Ray]", "add:"+ String.valueOf(wordToCommit.length()) +" char ! (commitWordToInput)");
+        addLogTypedChar(wordToCommit.length());
+//        Log.d("[Ray]", "add:"+ String.valueOf(wordToCommit.length()) +" char ! (commitWordToInput)");
         if (ic != null) {
             if (correcting) {
                 AnyApplication.getDeviceSpecific().commitCorrectionToInputConnection(ic, mGlobalCursorPosition - mWord.getTypedWord().length(), mWord.getTypedWord(), mWord.getPreferredWord());
@@ -2196,8 +2201,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
             } else {
                 ic.commitText(wordToCommit, 1);
             }
-//            deleteLogTypedChar(mWord.getTypedWord().length());
-            Log.d("[Ray]", "delete:"+ String.valueOf(mWord.getTypedWord().length()) +" char ! (commitWordToInput)");
+            deleteLogTypedChar(mWord.getTypedWord().length());
+//            Log.d("[Ray]", "delete:"+ String.valueOf(mWord.getTypedWord().length()) +" char ! (commitWordToInput)");
         }
         mCommittedWord = wordToCommit;
         mUndoCommitCursorPosition = UNDO_COMMIT_WAITING_TO_RECORD_POSITION;
@@ -2550,5 +2555,54 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
 
     /*package*/ void closeDictionaries() {
         mSuggest.closeDictionaries();
+    }
+
+    // log stuff
+    void getPref(){
+        if (mPref == null){
+            mPref = getSharedPreferences("logstats", Context.MODE_PRIVATE);
+        }
+        if (mPrefEditor == null){
+            mPrefEditor = mPref.edit();
+        }
+    }
+
+    void addLogTypedChar(int length){
+        getPref();
+        int oldCount = mPref.getInt("typedChar", 0);
+        mPrefEditor.putInt("typedChar", oldCount+length);
+        mPrefEditor.apply();
+    }
+
+    void deleteLogTypedChar(int length){
+        getPref();
+        int oldCount = mPref.getInt("deletedChar", 0);
+        mPrefEditor.putInt("deletedChar", oldCount+length);
+        Log.d("[Ray]", "deletedChar: now "+String.valueOf(oldCount+1));
+        mPrefEditor.apply();
+    }
+
+    void addLogEmoji(){
+        getPref();
+        int oldCount = mPref.getInt("addedEmoji", 0);
+        mPrefEditor.putInt("addedEmoji", oldCount+1);
+        Log.d("[Ray]", "addLogEmoji: now "+String.valueOf(oldCount+1));
+        mPrefEditor.apply();
+    }
+
+    void deleteLogEmoji(){
+        getPref();
+        int oldCount = mPref.getInt("deletedEmoji", 0);
+        mPrefEditor.putInt("deletedEmoji", oldCount+1);
+        mPrefEditor.apply();
+    }
+
+    String stringLogStatus(){
+        getPref();
+        String logstatus = "TypedChar: "+ String.valueOf(mPref.getInt("typedChar", 0))
+                + " DeletedChar: "+ String.valueOf(mPref.getInt("deletedChar", 0))
+                + " AddedEmoji: " + String.valueOf(mPref.getInt("addedEmoji", 0))
+                + " DeletedEmoji: " + String.valueOf(mPref.getInt("deletedEmoji", 0));
+        return logstatus;
     }
 }
