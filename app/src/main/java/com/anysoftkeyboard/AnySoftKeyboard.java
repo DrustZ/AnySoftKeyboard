@@ -813,6 +813,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         ImageView closeIcon = view.findViewById(R.id.close_suggestions_strip_icon);
         if (suggestionCloseDrawable != null) closeIcon.setImageDrawable(suggestionCloseDrawable);
 
+        /*
+        * disable close suggestion
         closeIcon.setOnClickListener(new OnClickListener() {
             // two seconds is enough.
             private static final long DOUBLE_TAP_TIMEOUT = 2 * 1000 - 50;
@@ -825,6 +827,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                 mKeyboardHandler.sendMessageDelayed(mKeyboardHandler.obtainMessage(KeyboardUIStateHandler.MSG_REMOVE_CLOSE_SUGGESTIONS_HINT), DOUBLE_TAP_TIMEOUT);
             }
         });
+        */
 
         mCandidateCloseText.setTextColor(closeTextColor);
         mCandidateCloseText.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSizePixel);
@@ -1427,6 +1430,12 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
     @Override
     public void onText(Key key, CharSequence text) {
         Logger.d(TAG, "onText: '%s'", text);
+
+        if (EmojiManager.isEmoji(text.toString())) {
+            Log.d("[Ray]", "onText: emoji input!");
+            addLogEmoji();
+        }
+
         InputConnection ic = getCurrentInputConnection();
         if (ic == null) {
             return;
@@ -1444,7 +1453,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         ic.endBatchEdit();
 
         List<CharSequence> suggestions = mSuggest.getNextSuggestions(mCommittedWord, false);
-        suggestions.add(0, "\uD83D\uDE00");
+//        suggestions.add(0, "\uD83D\uDE00");
         setSuggestions(suggestions, false, false, false);
     }
 
@@ -2104,7 +2113,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         if (EmojiManager.isEmoji(suggestion.toString())) {
             //regular emoji. Storing in history.
 //            Log.d("[Ray]", "pickSuggestionManually: emoji: " + suggestion.toString());
-            addLogEmoji();
+            addLogPickEmoji();
             emojiJustPicked = true;
         }
 
@@ -2567,6 +2576,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         }
     }
 
+    //the amount of typed chars
     void addLogTypedChar(int length){
         getPref();
         int oldCount = mPref.getInt("typedChar", 0);
@@ -2574,6 +2584,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         mPrefEditor.apply();
     }
 
+    //the amount of deleted chars
     void deleteLogTypedChar(int length){
         getPref();
         int oldCount = mPref.getInt("deletedChar", 0);
@@ -2582,6 +2593,24 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         mPrefEditor.apply();
     }
 
+    //the amount when picked one emoji from suggestions
+    void addLogPickEmoji(){
+        getPref();
+        int oldCount = mPref.getInt("pickedEmoji", 0);
+        mPrefEditor.putInt("pickedEmoji", oldCount+1);
+//        Log.d("[Ray]", "pickedLogEmoji: now "+String.valueOf(oldCount+1));
+        mPrefEditor.apply();
+    }
+
+    //the amount when picked one emoji and then delete
+    void deleteLogEmoji(){
+        getPref();
+        int oldCount = mPref.getInt("deletedEmoji", 0);
+        mPrefEditor.putInt("deletedEmoji", oldCount+1);
+        mPrefEditor.apply();
+    }
+
+    //the amount when add emoji from keyboard
     void addLogEmoji(){
         getPref();
         int oldCount = mPref.getInt("addedEmoji", 0);
@@ -2590,18 +2619,12 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         mPrefEditor.apply();
     }
 
-    void deleteLogEmoji(){
-        getPref();
-        int oldCount = mPref.getInt("deletedEmoji", 0);
-        mPrefEditor.putInt("deletedEmoji", oldCount+1);
-        mPrefEditor.apply();
-    }
-
     String stringLogStatus(){
         getPref();
         String logstatus = "TypedChar: "+ String.valueOf(mPref.getInt("typedChar", 0))
                 + " DeletedChar: "+ String.valueOf(mPref.getInt("deletedChar", 0))
                 + " AddedEmoji: " + String.valueOf(mPref.getInt("addedEmoji", 0))
+                + " PickedEmoji: " + String.valueOf(mPref.getInt("pickedEmoji", 0))
                 + " DeletedEmoji: " + String.valueOf(mPref.getInt("deletedEmoji", 0));
         return logstatus;
     }
