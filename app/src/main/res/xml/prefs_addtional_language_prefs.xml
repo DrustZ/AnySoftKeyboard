@@ -47,6 +47,14 @@
             android:title="@string/double_space_to_period"/>
 
         <android.support.v7.preference.CheckBoxPreference
+            android:defaultValue="true"
+            android:key="emoji_prediction_on_semantic_level"
+            android:persistent="true"
+            android:summaryOff=""
+            android:summaryOn="@string/emoji_prediction_summary"
+            android:title="@string/emoji_prediction_on_semantic_level"/>
+
+        <android.support.v7.preference.CheckBoxPreference
             android:defaultValue="@bool/settings_default_persistent_layout_per_package_id"
             android:key="@string/settings_key_persistent_layout_per_package_id"
             android:persistent="true"

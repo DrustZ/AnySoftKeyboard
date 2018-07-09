@@ -301,6 +301,7 @@
     <string name="settings_key_switch_keyboard_on_space">settings_key_switch_keyboard_on_space</string>
     <string name="settings_key_persistent_layout_per_package_id">settings_key_persistent_layout_per_package_id</string>
     <string name="settings_key_double_space_to_period">double_space_to_period</string>
+    <string name="settings_emoji_prediction_level">emoji_prediction_on_semantic_level</string>
     <string name="user_dict_editor_key">user_dict_editor_key</string>
     <string name="abbreviation_dict_editor_key">abbreviation_dict_editor_key</string>
 

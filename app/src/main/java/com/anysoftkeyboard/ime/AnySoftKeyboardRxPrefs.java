@@ -26,6 +26,7 @@ public abstract class AnySoftKeyboardRxPrefs extends AnySoftKeyboardBase {
     protected boolean mUseFullScreenInputInPortrait;
     protected boolean mSwitchKeyboardOnSpace;
     protected boolean mIsDoubleSpaceChangesToPeriod;
+    protected boolean mEmojiPredictOnSemanticLevel;
     protected int mMultiTapTimeout;
     protected int mLongPressTimeout;
     protected boolean mSwapPunctuationAndSpace;
@@ -53,12 +54,15 @@ public abstract class AnySoftKeyboardRxPrefs extends AnySoftKeyboardBase {
                 .asObservable().subscribe(value -> mSwitchKeyboardOnSpace = value));
         addDisposable(mRxPrefs.getBoolean(R.string.settings_key_double_space_to_period, R.bool.settings_default_double_space_to_period)
                 .asObservable().subscribe(value -> mIsDoubleSpaceChangesToPeriod = value));
+        addDisposable(mRxPrefs.getBoolean(R.string.settings_emoji_prediction_level, R.bool.settings_default_emoji_prediction_on_semantic_level)
+                .asObservable().subscribe(value -> mEmojiPredictOnSemanticLevel = value));
         addDisposable(mRxPrefs.getString(R.string.settings_key_multitap_timeout, R.string.settings_default_multitap_timeout)
                 .asObservable().map(Integer::parseInt).subscribe(value -> mMultiTapTimeout = value));
         addDisposable(mRxPrefs.getBoolean(R.string.settings_key_bool_should_swap_punctuation_and_space, R.bool.settings_default_bool_should_swap_punctuation_and_space)
                 .asObservable().subscribe(value -> mSwapPunctuationAndSpace = value));
         addDisposable(mRxPrefs.getString(R.string.settings_key_long_press_timeout, R.string.settings_default_long_press_timeout)
                 .asObservable().map(Integer::parseInt).subscribe(value -> mLongPressTimeout = value));
+
     }
 
     @NonNull

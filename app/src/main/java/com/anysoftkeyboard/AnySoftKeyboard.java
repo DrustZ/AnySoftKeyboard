@@ -99,9 +99,13 @@ import com.vdurmont.emoji.Emoji;
 import com.vdurmont.emoji.EmojiManager;
 import com.vdurmont.emoji.EmojiParser;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -152,6 +156,8 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
      * is prediction needed for the current input connection
      */
     private boolean mPredictionOn;
+    private JSONObject emojis = null;
+    private String lastWord = null; //last word that has emoji
     /*
      * is out-side completions needed
      */
@@ -339,6 +345,25 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
                         }));
 
         mVoiceRecognitionTrigger = new VoiceRecognitionTrigger(this);
+
+        InputStream is = getResources().openRawResource(R.raw.kword_to_emoji);
+        try {
+            String ret = convertStreamToString(is);
+            emojis = new JSONObject(ret);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static String convertStreamToString(InputStream is) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n");
+        }
+        reader.close();
+        return sb.toString();
     }
 
     private static CondenseType parseCondenseType(String prefCondenseType) {
@@ -1429,10 +1454,10 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
 
     @Override
     public void onText(Key key, CharSequence text) {
-        Logger.d(TAG, "onText: '%s'", text);
+//        Logger.d(TAG, "onText: '%s'", text);
 
         if (EmojiManager.isEmoji(text.toString())) {
-            Log.d("[Ray]", "onText: emoji input!");
+//            Log.d("[Ray]", "onText: emoji input!");
             addLogEmoji();
         }
 
@@ -1922,53 +1947,93 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         //[Ray] get left chars
         InputConnection inputConnection = getCurrentInputConnection();
         String content = inputConnection.getTextBeforeCursor(200, 0).toString().trim();
-        Log.d("[Ray]", "[content] "+content);
+//        Log.d("[Ray]", "[content] "+content);
         if (content.equalsIgnoreCase("showlogstatus:")){
             inputConnection.commitText(stringLogStatus(), 1);
             return;
         }
 
-        OkHttpClient okHttpClient = new OkHttpClient();
-        FormBody formBody = new FormBody
-                .Builder()
-                .add("content",content)
-                .build();
-        Request request = new Request
-                .Builder()
-                .post(formBody)
-                .url("http://128.95.157.1:8888")
-                .build();
-        okHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {}
+        if (!mEmojiPredictOnSemanticLevel){
+            try {
+                String[] words = content.split("\\s+");
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String[] results = response.body().string().split("-splt-");
-                Log.d("[Ray]", results[0]);
-                if (results.length == 3) {
-                    if (results[0].contentEquals(inputConnection.getTextBeforeCursor(200, 0).toString().trim())){
-                        String[] emojis = results[1].split(",");
-                        List<CharSequence> suggestions = new ArrayList<CharSequence>();
-                        for (String e : emojis) {
-                            int idx = Integer.parseInt(e);
-                            suggestions.add(ConstantValues.EMOJILIST[idx]);
-                        }
-
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            public void run() {
-                                setSuggestions(suggestions, false, false, false);
-                                Log.d("[Ray]", results[1]);
-                            }
-                        });
-
+                try {
+                    JSONArray jArray = null;
+                    if (emojis.has(words[words.length-1])){
+                        jArray = emojis.getJSONArray(words[words.length-1]);
+                        lastWord = words[words.length-1];
+                    } else if (lastWord != null) {
+                        jArray = emojis.getJSONArray(lastWord);
                     }
 
+                    List<CharSequence> suggestions = new ArrayList<CharSequence>();
+                    if (jArray != null) {
+                        for (int i = 0; i < jArray.length(); ++i) {
+                            String emoji = ":" + jArray.getString(i) + ":";
+                            emoji = EmojiParser.parseToUnicode(emoji);
+                            if (EmojiManager.isEmoji(emoji)) {
+                                suggestions.add(emoji);
+                            }
+                        }
+                    } else {
+                        // add most frequent emojis
+//                        suggestions.add(EmojiParser.parseToUnicode(":joy"));
+//                        suggestions.add(EmojiParser.parseToUnicode(":heart"));
+//                        suggestions.add(EmojiParser.parseToUnicode(":heart_eyes"));
+//                        suggestions.add(EmojiParser.parseToUnicode(":sob"));
+//                        suggestions.add(EmojiParser.parseToUnicode(":blush"));
+                    }
+                    setSuggestions(suggestions, false, false, false);
+                } catch (Exception e){
+                    e.printStackTrace();
                 }
-                response.body().close();
-
+            } catch (Exception e){
+                e.printStackTrace();
             }
-        });
+        } else {
+            OkHttpClient okHttpClient = new OkHttpClient();
+            FormBody formBody = new FormBody
+                    .Builder()
+                    .add("content", content)
+                    .build();
+            Request request = new Request
+                    .Builder()
+                    .post(formBody)
+                    .url("http://128.95.157.1:8888")
+                    .build();
+            okHttpClient.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    String[] results = response.body().string().split("-splt-");
+//                    Log.d("[Ray]", results[0]);
+                    if (results.length == 3) {
+                        if (results[0].contentEquals(inputConnection.getTextBeforeCursor(200, 0).toString().trim())) {
+                            String[] emojis = results[1].split(",");
+                            List<CharSequence> suggestions = new ArrayList<CharSequence>();
+                            for (String e : emojis) {
+                                int idx = Integer.parseInt(e);
+                                suggestions.add(ConstantValues.EMOJILIST[idx]);
+                            }
+
+                            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                public void run() {
+                                    setSuggestions(suggestions, false, false, false);
+//                                    Log.d("[Ray]", results[1]);
+                                }
+                            });
+
+                        }
+
+                    }
+                    response.body().close();
+
+                }
+            });
+        }
     }
 
     private List<String> splitTokens(String word){
