@@ -157,6 +157,7 @@ public class AnyApplication extends Application {
                             showApp ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                             PackageManager.DONT_KILL_APP);
                 }));
+
     }
 
     private void updateStatistics(Context context) {

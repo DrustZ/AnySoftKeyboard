@@ -55,6 +55,13 @@
             android:title="@string/emoji_prediction_on_semantic_level"/>
 
         <android.support.v7.preference.CheckBoxPreference
+            android:defaultValue="true"
+            android:key="default_enable_emoji_prediction"
+            android:persistent="true"
+            android:summaryOff=""
+            android:title="@string/default_enable_emoji_prediction"/>
+
+        <android.support.v7.preference.CheckBoxPreference
             android:defaultValue="@bool/settings_default_persistent_layout_per_package_id"
             android:key="@string/settings_key_persistent_layout_per_package_id"
             android:persistent="true"

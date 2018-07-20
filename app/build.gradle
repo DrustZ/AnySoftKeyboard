@@ -120,6 +120,7 @@ android {
 
     lintOptions {
         lintConfig file("${projectDir}/lint/lint.xml")
+        checkReleaseBuilds false
     }
 
     aaptOptions {

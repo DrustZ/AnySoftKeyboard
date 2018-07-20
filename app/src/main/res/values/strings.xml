@@ -465,6 +465,7 @@
     <string name="double_space_to_period_summary">Double space tap will become period+space</string>
     <string name="emoji_prediction_on_semantic_level">Predict emoji on semantic level</string>
     <string name="emoji_prediction_summary">Word/Semantic level emoji prediction</string>
+    <string name="default_enable_emoji_prediction">Enable emoji prediction</string>
     <string name="tweak_animations_level_title">Animations</string>
     <string name="tweak_animations_level_summary">How much animations should be used. Currently:
         %s

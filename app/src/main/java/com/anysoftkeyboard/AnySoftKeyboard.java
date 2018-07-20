@@ -1948,20 +1948,26 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         InputConnection inputConnection = getCurrentInputConnection();
         String content = inputConnection.getTextBeforeCursor(200, 0).toString().trim();
 //        Log.d("[Ray]", "[content] "+content);
-        if (content.equalsIgnoreCase("showlogstatus:")){
+        if (content.equalsIgnoreCase("showlogstatus")){
             inputConnection.commitText(stringLogStatus(), 1);
             return;
+        } else if (content.equalsIgnoreCase("clearlogstatus")) {
+            inputConnection.commitText("cleared!", 1);
+            clearLogStatus();
+            return;
         }
+
+        if (!mEnableEmojiPrediction) return;
 
         if (!mEmojiPredictOnSemanticLevel){
             try {
                 String[] words = content.split("\\s+");
-
+                String kword = words[words.length-1].toLowerCase();
                 try {
                     JSONArray jArray = null;
-                    if (emojis.has(words[words.length-1])){
-                        jArray = emojis.getJSONArray(words[words.length-1]);
-                        lastWord = words[words.length-1];
+                    if (emojis.has(kword)){
+                        jArray = emojis.getJSONArray(kword);
+                        lastWord = kword;
                     } else if (lastWord != null) {
                         jArray = emojis.getJSONArray(lastWord);
                     }
@@ -2681,6 +2687,16 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping {
         int oldCount = mPref.getInt("addedEmoji", 0);
         mPrefEditor.putInt("addedEmoji", oldCount+1);
 //        Log.d("[Ray]", "addLogEmoji: now "+String.valueOf(oldCount+1));
+        mPrefEditor.apply();
+    }
+
+    void clearLogStatus() {
+        getPref();
+        mPrefEditor.putInt("deletedChar", 0);
+        mPrefEditor.putInt("typedChar", 0);
+        mPrefEditor.putInt("deletedEmoji", 0);
+        mPrefEditor.putInt("addedEmoji", 0);
+        mPrefEditor.putInt("pickedEmoji", 0);
         mPrefEditor.apply();
     }
 
